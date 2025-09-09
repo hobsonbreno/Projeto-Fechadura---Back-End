@@ -1,0 +1,6 @@
+node_modules
+dist
+# Ignora todos os .pem, exceto os da pasta certs
+*.pem
+!certs/
+!certs/*.pem
