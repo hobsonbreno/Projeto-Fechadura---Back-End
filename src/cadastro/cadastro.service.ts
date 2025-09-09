@@ -23,7 +23,19 @@ export class CadastroService {
     return this.cadastroModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
+  async buscarPorMatricula(registration: string) {
+    return this.cadastroModel.findOne({ registration }).exec();
+  }
+
+  async atualizarPorMatricula(registration: string, data: Partial<Cadastro>) {
+    return this.cadastroModel.findOneAndUpdate({ registration }, data, { new: true }).exec();
+  }
+
   async removerCadastro(id: string) {
     return this.cadastroModel.findByIdAndDelete(id).exec();
+  }
+
+  async removerPorMatricula(registration: string) {
+    return this.cadastroModel.findOneAndDelete({ registration }).exec();
   }
 }
