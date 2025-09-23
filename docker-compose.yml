@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./certs:/app/certs
+      - ./encodings.pickle:/app/encodings.pickle:ro
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: senha123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
