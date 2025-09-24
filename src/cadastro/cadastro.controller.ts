@@ -35,38 +35,38 @@ export class CadastroController {
       required: ['name', 'registration', 'financialStatus']
     }
   })
-  @UseInterceptors(AnyFilesInterceptor({
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        let nome = 'aluno';
-        try {
-          if (req.body && req.body.name) {
-            nome = req.body.name
-              .normalize('NFD').replace(/[^\w\s-]/g, '')
-              .replace(/\s+/g, '_');
+    @UseInterceptors(AnyFilesInterceptor({
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          let nome = 'aluno';
+          try {
+            if (req.body && req.body.name) {
+              nome = req.body.name
+                .normalize('NFD').replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '_');
+            }
+          } catch {}
+          const dir = `./uploads/${nome}`;
+          const fs = require('fs');
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
           }
-        } catch {}
-        const dir = `./uploads/${nome}`;
-        const fs = require('fs');
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          let nome = 'aluno';
+          try {
+            if (req.body && req.body.name) {
+              nome = req.body.name
+                .normalize('NFD').replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '_');
+            }
+          } catch {}
+          const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${nome}_${unique}${extname(file.originalname)}`);
         }
-        cb(null, dir);
-      },
-      filename: (req, file, cb) => {
-        let nome = 'aluno';
-        try {
-          if (req.body && req.body.name) {
-            nome = req.body.name
-              .normalize('NFD').replace(/[^\w\s-]/g, '')
-              .replace(/\s+/g, '_');
-          }
-        } catch {}
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${nome}_${unique}${extname(file.originalname)}`);
-      }
-    })
-  }))
+      })
+    }))
   async cadastrarAluno(
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() body: any
@@ -75,8 +75,22 @@ export class CadastroController {
     if (!body || !body.name || !body.registration || !body.financialStatus) {
       return { error: 'Campos obrigatórios não enviados', body, files };
     }
-    // Aqui você pode salvar no banco, processar arquivos, etc.
-    return { message: 'Cadastro recebido', body, files };
+    // Log para debug
+    console.log('Arquivos recebidos:', files);
+    console.log('Body recebido:', body);
+
+    const documentFile = files.find(f => f.fieldname === 'file');
+    const photos = files.filter(f => f.fieldname && f.fieldname.startsWith('photo'));
+
+    const cadastro = await this.cadastroService.criarCadastro({
+      name: body.name,
+      registration: body.registration,
+      financialStatus: body.financialStatus,
+      documentPath: documentFile?.path,
+      photosPaths: photos.map(f => f.path)
+    });
+
+    return { message: 'Cadastro salvo', cadastro };
   }
 
   @Get()
