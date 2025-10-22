@@ -4,28 +4,44 @@ import face_recognition
 import pickle
 import cv2
 
-print("[INFO] start processing faces...")
-imagePaths = list(paths.list_images("uploads"))
-knownEncodings = []
-knownNames = []
+DB_FILE = "encodings.pickle"
+DATASET_DIR = "uploads"
 
+# 1. Tenta carregar encodings existentes
+if os.path.exists(DB_FILE):
+    print("[INFO] Carregando banco existente...")
+    with open(DB_FILE, "rb") as f:
+        data = pickle.load(f)
+    knownEncodings = data["encodings"]
+    knownNames = data["names"]
+else:
+    print("[INFO] Nenhum banco encontrado. Criando novo...")
+    knownEncodings = []
+    knownNames = []
+
+# 2. Seleciona apenas imagens novas
+imagePaths = list(paths.list_images(DATASET_DIR))
 for (i, imagePath) in enumerate(imagePaths):
-    print(f"[INFO] processing image {i + 1}/{len(imagePaths)}")
-    name = imagePath.split(os.path.sep)[-2]
-    
+    print(f"[INFO] Processando imagem {i + 1}/{len(imagePaths)}")
+    name = os.path.basename(os.path.dirname(imagePath))
+
     image = cv2.imread(imagePath)
+    if image is None:
+        continue
+
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    
-    boxes = face_recognition.face_locations(rgb, model="hog")
+
+    boxes = face_recognition.face_locations(rgb, model="cnn")
     encodings = face_recognition.face_encodings(rgb, boxes)
-    
+
     for encoding in encodings:
         knownEncodings.append(encoding)
         knownNames.append(name)
 
-print("[INFO] serializing encodings...")
+# 3. Salva banco atualizado
+print("[INFO] Atualizando banco de encodings...")
 data = {"encodings": knownEncodings, "names": knownNames}
-with open("encodings.pickle", "wb") as f:
-    f.write(pickle.dumps(data))
+with open(DB_FILE, "wb") as f:
+    pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-print("[INFO] Training complete. Encodings saved to 'encodings.pickle'")
+print("[INFO] Banco atualizado com sucesso.")
